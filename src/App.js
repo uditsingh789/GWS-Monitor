@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X } from 'lucide-react';
+import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X, UserPlus } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // --- SUPABASE SETUP ---
@@ -233,11 +233,20 @@ const StudentCard = ({ student, onRecordPayment }) => {
   );
 };
 
-const StudentsTab = ({ students, onRecordPayment }) => {
+const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('All');
   const [selectedSection, setSelectedSection] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  
+  // Add Student Modal State
+  const [isAdding, setIsAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newRoll, setNewRoll] = useState('');
+  const [newGrade, setNewGrade] = useState(GRADES[0]);
+  const [newSection, setNewSection] = useState(SECTIONS[0]);
+  const [newTotalFee, setNewTotalFee] = useState('');
+  const [newPendingFee, setNewPendingFee] = useState('');
 
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -252,12 +261,39 @@ const StudentsTab = ({ students, onRecordPayment }) => {
     return matchesSearch && matchesGrade && matchesSection && matchesStatus;
   });
 
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    onAddStudent({
+      name: newName,
+      roll: newRoll,
+      grade: newGrade,
+      section: newSection,
+      totalFee: Number(newTotalFee),
+      pendingFee: Number(newPendingFee),
+      lastPaid: null
+    });
+    // Reset Form
+    setIsAdding(false);
+    setNewName('');
+    setNewRoll('');
+    setNewTotalFee('');
+    setNewPendingFee('');
+  };
+
   return (
-    <div className="p-6 md:p-8 animate-in fade-in duration-500">
-      <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center">
-        <Users className="mr-3 text-blue-600" size={32} />
-        Student Directory
-      </h2>
+    <div className="p-6 md:p-8 animate-in fade-in duration-500 relative">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-slate-800 flex items-center">
+          <Users className="mr-3 text-blue-600" size={32} />
+          Student Directory
+        </h2>
+        <button 
+          onClick={() => setIsAdding(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl transition-all shadow-md flex items-center"
+        >
+          <UserPlus size={18} className="mr-2" /> Add Student
+        </button>
+      </div>
 
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col lg:flex-row gap-4">
         <div className="flex-1 relative">
@@ -310,6 +346,65 @@ const StudentsTab = ({ students, onRecordPayment }) => {
           <Users size={48} className="text-slate-300 mb-4" />
           <h3 className="text-lg font-bold text-slate-600">No matching records found</h3>
           <p className="text-sm text-slate-400 mt-1">Adjust your filters or search term to try again.</p>
+        </div>
+      )}
+
+      {/* Add Student Modal */}
+      {isAdding && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800 text-lg">Register New Student</h3>
+              <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                <input type="text" required value={newName} onChange={e => setNewName(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rahul Kumar" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
+                  <input type="text" required value={newRoll} onChange={e => setNewRoll(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10-A-21" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade & Section</label>
+                  <div className="flex gap-2">
+                    <select value={newGrade} onChange={e => setNewGrade(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                      {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <select value={newSection} onChange={e => setNewSection(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Fee (₹)</label>
+                  <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Fee (₹)</label>
+                  <input type="number" required min="0" value={newPendingFee} onChange={e => setNewPendingFee(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+              </div>
+              <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end gap-3">
+                <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm">
+                  Save Student
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
@@ -371,6 +466,30 @@ export default function App() {
     ]);
 
     // Refresh Data
+    fetchData();
+  };
+
+  const handleAddStudent = async (newStudentData) => {
+    // 1. Ensure keys match the exact column names in your Supabase SQL table
+    const formattedData = {
+      name: newStudentData.name,
+      roll: newStudentData.roll,
+      grade: newStudentData.grade,
+      section: newStudentData.section,
+      pendingFee: newStudentData.pendingFee,
+      totalFee: newStudentData.totalFee,
+      lastPaid: null
+    };
+
+    // 2. Insert into students table
+    await supabase.from('students').insert([formattedData]);
+
+    // 3. Log Activity
+    await supabase.from('activities').insert([
+      { user_name: currentUser, action: `Added new student record: ${newStudentData.name}` }
+    ]);
+
+    // 4. Refresh Data to show the new student card immediately
     fetchData();
   };
 
@@ -437,7 +556,7 @@ export default function App() {
           {activeTab === 'dashboard' ? (
             <Dashboard user={currentUser} activities={activities} students={students} />
           ) : (
-            <StudentsTab students={students} onRecordPayment={handleRecordPayment} />
+            <StudentsTab students={students} onRecordPayment={handleRecordPayment} onAddStudent={handleAddStudent} />
           )}
         </main>
       </div>
