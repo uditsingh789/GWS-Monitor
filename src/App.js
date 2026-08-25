@@ -11,17 +11,21 @@ const GRADES = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th
 const SECTIONS = ['A', 'B'];
 
 // --- UTILS ---
-// Calculates the current month of the academic year (Assuming April start)
 const getAcademicMonth = () => {
-  const currentMonth = new Date().getMonth() + 1; // 1-12
+  const currentMonth = new Date().getMonth() + 1;
   return currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
 };
 
 const calculateCurrentlyDue = (student) => {
-  const totalPaid = student.totalFee - student.pendingFee;
-  const monthlyFee = student.totalFee / 12;
+  const totalPaid = Number(student.totalFee) - Number(student.pendingFee);
+  const monthlyFee = Number(student.totalFee) / 12;
   const expectedPayment = monthlyFee * getAcademicMonth();
-  return Math.max(0, expectedPayment - totalPaid);
+  
+  const baseTuitionDue = Math.max(0, expectedPayment - totalPaid);
+  const previousBalance = Number(student.previousBalance || 0);
+  const transportFee = Number(student.transportFee || 0);
+  
+  return baseTuitionDue + previousBalance + transportFee;
 };
 
 // --- COMPONENTS ---
@@ -163,14 +167,24 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
   const [newRoll, setNewRoll] = useState('');
   const [newGrade, setNewGrade] = useState(GRADES[0]);
   const [newSection, setNewSection] = useState(SECTIONS[0]);
+  
+  const [parentName, setParentName] = useState('');
+  const [address, setAddress] = useState('');
+  const [distance, setDistance] = useState('');
+  const [contact1, setContact1] = useState('');
+  const [contact2, setContact2] = useState('');
+  const [udiseStatus, setUdiseStatus] = useState('');
+  const [aparId, setAparId] = useState('');
+  const [remarks, setRemarks] = useState('');
+
   const [newTotalFee, setNewTotalFee] = useState('');
   const [newFeesSubmitted, setNewFeesSubmitted] = useState('');
+  const [previousBalance, setPreviousBalance] = useState('');
+  const [transportFee, setTransportFee] = useState('');
   const [newLastPaidDate, setNewLastPaidDate] = useState('');
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    
-    // Automatically calculate the yearly pending fee for the database
     const calculatedPendingFee = Number(newTotalFee) - Number(newFeesSubmitted);
 
     onAddStudent({
@@ -178,17 +192,26 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
       roll: newRoll,
       grade: newGrade,
       section: newSection,
+      parentName: parentName,
+      address: address,
+      distance: distance,
+      contact1: contact1,
+      contact2: contact2,
+      udiseStatus: udiseStatus,
+      aparId: aparId,
+      remarks: remarks,
+      previousBalance: Number(previousBalance || 0),
+      transportFee: Number(transportFee || 0),
       totalFee: Number(newTotalFee),
       pendingFee: calculatedPendingFee,
       lastPaid: newLastPaidDate || null
     });
     
     // Reset form
-    setNewName('');
-    setNewRoll('');
-    setNewTotalFee('');
-    setNewFeesSubmitted('');
-    setNewLastPaidDate('');
+    setNewName(''); setNewRoll(''); setParentName(''); setAddress('');
+    setDistance(''); setContact1(''); setContact2(''); setUdiseStatus('');
+    setAparId(''); setRemarks(''); setNewTotalFee(''); setNewFeesSubmitted('');
+    setPreviousBalance(''); setTransportFee(''); setNewLastPaidDate('');
   };
 
   return (
@@ -198,55 +221,133 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
         Manage Students
       </h2>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* ADD STUDENT SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-fit">
+        <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-fit">
           <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center">
             <h3 className="font-bold text-slate-800 text-lg">Register New Student</h3>
           </div>
-          <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
-              <input type="text" required value={newName} onChange={e => setNewName(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rahul Kumar" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
-                <input type="text" required value={newRoll} onChange={e => setNewRoll(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10-A-21" />
+          <form onSubmit={handleAddSubmit} className="p-6 space-y-6">
+            
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Primary Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                  <input type="text" required value={newName} onChange={e => setNewName(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
+                  <input type="text" required value={newRoll} onChange={e => setNewRoll(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade & Section</label>
-                <div className="flex gap-2">
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade</label>
                   <select value={newGrade} onChange={e => setNewGrade(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
                     {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                   </select>
-                  <select value={newSection} onChange={e => setNewSection(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Section</label>
+                  <select value={newSection} onChange={e => setNewSection(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
                     {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">APAR ID</label>
+                  <input type="text" value={aparId} onChange={e => setAparId(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Yearly Fee (₹)</label>
-                <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Contact & Operations</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Parent's Name</label>
+                  <input type="text" value={parentName} onChange={e => setParentName(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Address</label>
+                  <input type="text" value={address} onChange={e => setAddress(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fees Submitted (₹)</label>
-                <input type="number" required min="0" value={newFeesSubmitted} onChange={e => setNewFeesSubmitted(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contact 1</label>
+                  <input type="text" value={contact1} onChange={e => setContact1(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contact 2</label>
+                  <input type="text" value={contact2} onChange={e => setContact2(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date of Submission</label>
-                <input type="date" value={newLastPaidDate} onChange={e => setNewLastPaidDate(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Distance (Bus)</label>
+                  <input type="text" value={distance} onChange={e => setDistance(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 5 km" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">UDISE Status</label>
+                  <input type="text" value={udiseStatus} onChange={e => setUdiseStatus(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
+                  <input type="text" value={remarks} onChange={e => setRemarks(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
             </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Financials</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Yearly Fee (₹)</label>
+                  <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Previous Year Balance (₹)</label>
+                  <input type="number" min="0" value={previousBalance} onChange={e => setPreviousBalance(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Transport Fee (₹)</label>
+                  <input type="number" min="0" value={transportFee} onChange={e => setTransportFee(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fees Submitted (₹)</label>
+                  <input type="number" required min="0" value={newFeesSubmitted} onChange={e => setNewFeesSubmitted(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date of Submission</label>
+                  <input type="date" value={newLastPaidDate} onChange={e => setNewLastPaidDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+            </div>
+
             <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end">
-              <button type="submit" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm w-full">
+              <button type="submit" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm w-full md:w-auto">
                 Save to Database
               </button>
             </div>
@@ -254,7 +355,7 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
         </div>
 
         {/* REMOVE STUDENT SECTION */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-[600px] flex flex-col">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-[600px] flex flex-col xl:col-span-1">
           <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h3 className="font-bold text-slate-800 text-lg">Remove Student Record</h3>
             <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{students.length} Total</span>
@@ -293,7 +394,6 @@ const StudentsTab = ({ students, onRecordPayment }) => {
   const [sortDesc, setSortDesc] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // Filter and Sort Logic
   const filteredStudents = students.filter(student => {
     const matchesSearch = 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -317,7 +417,6 @@ const StudentsTab = ({ students, onRecordPayment }) => {
         Database & Fee Collection
       </h2>
 
-      {/* Filters and Sorting */}
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col lg:flex-row gap-4 items-center">
         <div className="flex-1 relative w-full">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
@@ -356,9 +455,7 @@ const StudentsTab = ({ students, onRecordPayment }) => {
         </div>
       </div>
 
-      {/* List Layout Database */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        {/* Table Header (Hidden on small screens) */}
         <div className="hidden md:grid grid-cols-4 gap-4 p-5 border-b border-slate-100 bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-wider">
           <div className="pl-6">Student Name</div>
           <div>ID & Class</div>
@@ -366,7 +463,6 @@ const StudentsTab = ({ students, onRecordPayment }) => {
           <div>Currently Due</div>
         </div>
         
-        {/* Table Body */}
         <div className="divide-y divide-slate-100">
           {filteredStudents.map(student => {
             const currentlyDue = calculateCurrentlyDue(student);
@@ -378,15 +474,12 @@ const StudentsTab = ({ students, onRecordPayment }) => {
                 onClick={() => setSelectedStudent(student)}
                 className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 items-center hover:bg-blue-50/40 cursor-pointer transition-colors group relative"
               >
-                {/* Visual Status Indicator Line */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors ${hasCurrentDue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                 
-                {/* Col 1: Name */}
                 <div className="pl-4 md:pl-6">
                   <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{student.name}</h3>
                 </div>
                 
-                {/* Col 2: ID & Class */}
                 <div>
                   <p className="text-sm text-slate-500 font-mono font-bold">{student.roll}</p>
                   <span className="bg-slate-100 px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 mt-1 inline-block">
@@ -394,13 +487,11 @@ const StudentsTab = ({ students, onRecordPayment }) => {
                   </span>
                 </div>
                 
-                {/* Col 3: Yearly Pending */}
                 <div>
                   <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Total Pending:</span>
                   <span className="font-bold text-slate-600 text-base">₹{Number(student.pendingFee).toLocaleString()}</span>
                 </div>
                 
-                {/* Col 4: Currently Due */}
                 <div>
                   <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Currently Due:</span>
                   <span className={`font-bold inline-block px-3 py-1.5 rounded-lg border ${hasCurrentDue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
@@ -412,7 +503,6 @@ const StudentsTab = ({ students, onRecordPayment }) => {
           })}
         </div>
 
-        {/* Empty State */}
         {filteredStudents.length === 0 && (
           <div className="text-center py-16 flex flex-col items-center justify-center">
             <Users size={48} className="text-slate-300 mb-4" />
@@ -422,7 +512,6 @@ const StudentsTab = ({ students, onRecordPayment }) => {
         )}
       </div>
 
-      {/* Pop-up Modal for Full Details & Payment */}
       {selectedStudent && (
         <StudentDetailModal 
           student={selectedStudent} 
@@ -440,6 +529,9 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
   const pendingFee = Number(student.pendingFee);
   const totalFee = Number(student.totalFee);
   const totalPaid = totalFee - pendingFee;
+  
+  const previousBalance = Number(student.previousBalance || 0);
+  const transportFee = Number(student.transportFee || 0);
   const currentlyDue = calculateCurrentlyDue(student);
 
   const handlePaymentSubmit = (e) => {
@@ -454,9 +546,8 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
           <div>
             <h3 className="font-bold text-slate-800 text-xl">{student.name}</h3>
@@ -467,38 +558,76 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 overflow-y-auto max-h-[80vh] space-y-6">
           
-          {/* Financial Breakdown Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Yearly Fee</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+            <div className="col-span-2">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent's Name</span>
+              <span className="font-semibold text-slate-700">{student.parentName || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 1</span>
+              <span className="font-semibold text-slate-700">{student.contact1 || 'N/A'}</span>
+            </div>
+            <div>
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 2</span>
+              <span className="font-semibold text-slate-700">{student.contact2 || 'N/A'}</span>
+            </div>
+            <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1">
+              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Address & Distance</span>
+              <span className="font-semibold text-slate-700">{student.address || 'N/A'} ({student.distance || 'N/A'})</span>
+            </div>
+            <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1 grid grid-cols-3 gap-2">
+               <div>
+                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">UDISE Status</span>
+                 <span className="font-semibold text-slate-700">{student.udiseStatus || 'N/A'}</span>
+               </div>
+               <div>
+                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">APAR ID</span>
+                 <span className="font-semibold text-slate-700">{student.aparId || 'N/A'}</span>
+               </div>
+               <div>
+                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Remarks</span>
+                 <span className="font-semibold text-slate-700 truncate block">{student.remarks || 'None'}</span>
+               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-slate-200">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prev Balance</p>
+              <p className="text-lg font-bold text-slate-700">₹{previousBalance.toLocaleString()}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Transport Fee</p>
+              <p className="text-lg font-bold text-slate-700">₹{transportFee.toLocaleString()}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tuition</p>
               <p className="text-lg font-bold text-slate-700">₹{totalFee.toLocaleString()}</p>
             </div>
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid So Far</p>
+            <div className="bg-white p-4 rounded-xl border border-slate-200">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
               <p className="text-lg font-bold text-slate-700">₹{totalPaid.toLocaleString()}</p>
             </div>
-            <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 flex justify-between items-center">
+
+            <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 md:col-span-4 flex justify-between items-center">
               <div>
                 <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total Yearly Pending</p>
                 <p className="text-2xl font-bold text-rose-600">₹{pendingFee.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due</p>
-                <p className="text-xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
               </div>
             </div>
           </div>
 
-          {/* Activity/History Info */}
           <div className="flex items-center text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
             {pendingFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
             Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
           </div>
 
-          {/* Payment Action */}
           {pendingFee > 0 && (
             <div className="border-t border-slate-100 pt-6">
               <label className="block text-sm font-bold text-slate-700 mb-3">Record New Payment</label>
@@ -574,17 +703,7 @@ export default function App() {
   };
 
   const handleAddStudent = async (newStudentData) => {
-    const formattedData = {
-      name: newStudentData.name,
-      roll: newStudentData.roll,
-      grade: newStudentData.grade,
-      section: newStudentData.section,
-      pendingFee: newStudentData.pendingFee,
-      totalFee: newStudentData.totalFee,
-      lastPaid: newStudentData.lastPaid
-    };
-
-    await supabase.from('students').insert([formattedData]);
+    await supabase.from('students').insert([newStudentData]);
     await supabase.from('activities').insert([{ user_name: currentUser, action: `Added new student record: ${newStudentData.name}` }]);
     fetchData();
   };
