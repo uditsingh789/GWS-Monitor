@@ -453,7 +453,7 @@ const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="hidden md:grid grid-cols-4 gap-4 p-5 border-b border-slate-100 bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="hidden md:grid grid-cols-4 gap-4 px-5 py-4 border-b border-slate-100 bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-wider">
           <div className="pl-6">Student Name</div>
           <div>ID & Class</div>
           <div>Total Yearly Pending</div>
@@ -469,29 +469,29 @@ const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
               <div 
                 key={student.id} 
                 onClick={() => setSelectedStudent(student)}
-                className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 items-center hover:bg-blue-50/40 cursor-pointer transition-colors group relative"
+                className="grid grid-cols-1 md:grid-cols-4 gap-4 px-5 py-3 items-center hover:bg-blue-50/40 cursor-pointer transition-colors group relative"
               >
                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors ${hasCurrentDue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                 
                 <div className="pl-4 md:pl-6">
-                  <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{student.name}</h3>
+                  <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors">{student.name}</h3>
                 </div>
                 
-                <div>
+                <div className="flex items-center gap-2">
                   <p className="text-sm text-slate-500 font-mono font-bold">{student.roll}</p>
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 mt-1 inline-block">
+                  <span className="bg-slate-100 px-2 py-0.5 rounded-md text-[11px] font-bold text-slate-600">
                     {student.grade} - {student.section}
                   </span>
                 </div>
                 
                 <div>
                   <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Total Pending:</span>
-                  <span className="font-bold text-slate-600 text-base">₹{Number(student.pendingFee).toLocaleString()}</span>
+                  <span className="font-bold text-slate-600 text-sm">₹{Number(student.pendingFee).toLocaleString()}</span>
                 </div>
                 
                 <div>
                   <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Currently Due:</span>
-                  <span className={`font-bold inline-block px-3 py-1.5 rounded-lg border ${hasCurrentDue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                  <span className={`font-bold inline-block px-2 py-1 rounded-lg border text-sm ${hasCurrentDue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                     ₹{currentlyDue.toLocaleString()}
                   </span>
                 </div>
@@ -554,7 +554,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         
-        {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
             <h3 className="font-bold text-slate-800 text-xl">{isEditing ? `Editing ${student.name}` : student.name}</h3>
@@ -572,7 +571,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
           </div>
         </div>
 
-        {/* Content Body */}
         <div className="p-6 overflow-y-auto flex-1 bg-white">
           {isEditing ? (
             <form id="editForm" onSubmit={handleEditSubmit} className="space-y-6">
@@ -750,7 +748,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
           )}
         </div>
         
-        {/* Footer for Edit Mode */}
         {isEditing && (
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
             <button onClick={() => { setIsEditing(false); setEditData({...student}); }} className="px-5 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors">
