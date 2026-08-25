@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X, UserPlus } from 'lucide-react';
+import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X, UserPlus, Trash2, ArrowDownWideNarrow, ArrowUpNarrowWide, FileText } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // --- SUPABASE SETUP ---
@@ -9,6 +9,20 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const GRADES = ['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 const SECTIONS = ['A', 'B'];
+
+// --- UTILS ---
+// Calculates the current month of the academic year (Assuming April start)
+const getAcademicMonth = () => {
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+  return currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
+};
+
+const calculateCurrentlyDue = (student) => {
+  const totalPaid = student.totalFee - student.pendingFee;
+  const monthlyFee = student.totalFee / 12;
+  const expectedPayment = monthlyFee * getAcademicMonth();
+  return Math.max(0, expectedPayment - totalPaid);
+};
 
 // --- COMPONENTS ---
 
@@ -108,7 +122,7 @@ const Dashboard = ({ user, activities, students }) => {
             <DollarSign size={28} className="text-rose-600" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Pending Dues</p>
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Pending</p>
             <p className="text-3xl font-bold text-slate-800">₹{totalPending.toLocaleString()}</p>
           </div>
         </div>
@@ -144,122 +158,13 @@ const Dashboard = ({ user, activities, students }) => {
   );
 };
 
-const StudentCard = ({ student, onRecordPayment }) => {
-  const [showPaymentInput, setShowPaymentInput] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const pendingFee = Number(student.pendingFee);
-  const totalFee = Number(student.totalFee);
-  const hasPending = pendingFee > 0;
-
-  const handlePaymentSubmit = (e) => {
-    e.preventDefault();
-    const amount = Number(paymentAmount);
-    if (amount > 0 && amount <= pendingFee) {
-      onRecordPayment(student.id, amount, pendingFee, student.name);
-      setShowPaymentInput(false);
-      setPaymentAmount('');
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-lg transition-all duration-300 relative group flex flex-col h-full">
-      <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${hasPending ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-      
-      <div className="flex justify-between items-start mb-5 mt-1">
-        <div>
-          <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{student.name}</h3>
-          <p className="text-sm text-slate-400 font-mono font-semibold mt-1">{student.roll}</p>
-        </div>
-        <div className="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 uppercase tracking-wider">
-          {student.grade} - {student.section}
-        </div>
-      </div>
-
-      <div className="space-y-3 mt-auto border-t border-slate-100 pt-5">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-semibold text-slate-500">Total Fee</span>
-          <span className="font-bold text-slate-800">₹{totalFee.toLocaleString()}</span>
-        </div>
-        
-        <div className={`flex justify-between items-center p-3 rounded-xl ${hasPending ? 'bg-rose-50' : 'bg-emerald-50'}`}>
-          <span className="text-sm font-bold text-slate-700">Pending</span>
-          <span className={`font-bold text-lg ${hasPending ? 'text-rose-600' : 'text-emerald-600'}`}>
-            ₹{pendingFee.toLocaleString()}
-          </span>
-        </div>
-      </div>
-
-      {!showPaymentInput ? (
-        <div className="mt-5 flex items-center justify-between">
-          <div className="flex items-center text-xs font-semibold text-slate-400">
-            {hasPending ? <AlertCircle size={14} className="mr-1.5 text-rose-500" /> : <CheckCircle2 size={14} className="mr-1.5 text-emerald-500" />}
-            Last: {student.lastPaid || 'N/A'}
-          </div>
-          {hasPending && (
-            <button 
-              onClick={() => setShowPaymentInput(true)}
-              className="text-xs font-bold bg-slate-900 text-white px-3 py-1.5 rounded-lg hover:bg-blue-600 transition-colors flex items-center"
-            >
-              <CreditCard size={12} className="mr-1" /> Pay
-            </button>
-          )}
-        </div>
-      ) : (
-        <form onSubmit={handlePaymentSubmit} className="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2 animate-in slide-in-from-bottom-2">
-          <div className="flex justify-between items-center mb-1">
-            <label className="text-xs font-bold text-slate-600">Enter Amount (₹)</label>
-            <button type="button" onClick={() => setShowPaymentInput(false)} className="text-slate-400 hover:text-slate-600">
-              <X size={14} />
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <input 
-              type="number" 
-              max={pendingFee}
-              min="1"
-              value={paymentAmount}
-              onChange={(e) => setPaymentAmount(e.target.value)}
-              className="w-full text-sm p-2 rounded-lg border border-slate-300 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              placeholder={`Max: ${pendingFee}`}
-              required
-            />
-            <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-3 rounded-lg transition-colors">
-              Save
-            </button>
-          </div>
-        </form>
-      )}
-    </div>
-  );
-};
-
-const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('All');
-  const [selectedSection, setSelectedSection] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
-  
-  // Add Student Modal State
-  const [isAdding, setIsAdding] = useState(false);
+const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
   const [newName, setNewName] = useState('');
   const [newRoll, setNewRoll] = useState('');
   const [newGrade, setNewGrade] = useState(GRADES[0]);
   const [newSection, setNewSection] = useState(SECTIONS[0]);
   const [newTotalFee, setNewTotalFee] = useState('');
   const [newPendingFee, setNewPendingFee] = useState('');
-
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          student.roll.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGrade = selectedGrade === 'All' || student.grade === selectedGrade;
-    const matchesSection = selectedSection === 'All' || student.section === selectedSection;
-    const pendingFee = Number(student.pendingFee);
-    const matchesStatus = statusFilter === 'All' ? true : 
-                          statusFilter === 'Pending' ? pendingFee > 0 : 
-                          pendingFee === 0;
-    
-    return matchesSearch && matchesGrade && matchesSection && matchesStatus;
-  });
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -272,8 +177,6 @@ const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
       pendingFee: Number(newPendingFee),
       lastPaid: null
     });
-    // Reset Form
-    setIsAdding(false);
     setNewName('');
     setNewRoll('');
     setNewTotalFee('');
@@ -281,34 +184,141 @@ const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
   };
 
   return (
-    <div className="p-6 md:p-8 animate-in fade-in duration-500 relative">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-slate-800 flex items-center">
-          <Users className="mr-3 text-blue-600" size={32} />
-          Student Directory
-        </h2>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl transition-all shadow-md flex items-center"
-        >
-          <UserPlus size={18} className="mr-2" /> Add Student
-        </button>
-      </div>
+    <div className="p-6 md:p-8 animate-in fade-in duration-500">
+      <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center">
+        <UserPlus className="mr-3 text-blue-600" size={32} />
+        Manage Students
+      </h2>
 
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col lg:flex-row gap-4">
-        <div className="flex-1 relative">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* ADD STUDENT SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-fit">
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center">
+            <h3 className="font-bold text-slate-800 text-lg">Register New Student</h3>
+          </div>
+          <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+              <input type="text" required value={newName} onChange={e => setNewName(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rahul Kumar" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
+                <input type="text" required value={newRoll} onChange={e => setNewRoll(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10-A-21" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade & Section</label>
+                <div className="flex gap-2">
+                  <select value={newGrade} onChange={e => setNewGrade(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                  <select value={newSection} onChange={e => setNewSection(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                    {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Yearly Fee (₹)</label>
+                <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Fee (₹)</label>
+                <input type="number" required min="0" value={newPendingFee} onChange={e => setNewPendingFee(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+              </div>
+            </div>
+            <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end">
+              <button type="submit" className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm w-full">
+                Save to Database
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* REMOVE STUDENT SECTION */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-[600px] flex flex-col">
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 text-lg">Remove Student Record</h3>
+            <span className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">{students.length} Total</span>
+          </div>
+          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 p-2">
+            {students.map(student => (
+              <div key={student.id} className="flex justify-between items-center p-4 hover:bg-slate-50 rounded-xl transition-colors">
+                <div>
+                  <p className="font-bold text-slate-800">{student.name}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">{student.roll} • {student.grade}-{student.section}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    if(window.confirm(`Are you sure you want to permanently delete ${student.name}'s record?`)) {
+                      onRemoveStudent(student.id, student.name);
+                    }
+                  }}
+                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                  title="Remove Student"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StudentsTab = ({ students, onRecordPayment }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('All');
+  const [selectedSection, setSelectedSection] = useState('All');
+  const [sortDesc, setSortDesc] = useState(true);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  // Filter and Sort Logic
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = 
+      student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      student.roll.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.pendingFee.toString().includes(searchTerm); // Search by pending fee number
+      
+    const matchesGrade = selectedGrade === 'All' || student.grade === selectedGrade;
+    const matchesSection = selectedSection === 'All' || student.section === selectedSection;
+    
+    return matchesSearch && matchesGrade && matchesSection;
+  }).sort((a, b) => {
+    const dueA = calculateCurrentlyDue(a);
+    const dueB = calculateCurrentlyDue(b);
+    return sortDesc ? dueB - dueA : dueA - dueB;
+  });
+
+  return (
+    <div className="p-6 md:p-8 animate-in fade-in duration-500 relative">
+      <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center">
+        <FileText className="mr-3 text-blue-600" size={32} />
+        Database & Fee Collection
+      </h2>
+
+      {/* Filters and Sorting */}
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col lg:flex-row gap-4 items-center">
+        <div className="flex-1 relative w-full">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
           <input
             type="text"
-            placeholder="Search student name or roll ID..."
+            placeholder="Search by name, roll ID, or pending fee amount..."
             className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none font-medium transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 w-full lg:w-auto">
           <select
-            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors min-w-[140px]"
+            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors min-w-[130px]"
             value={selectedGrade}
             onChange={(e) => setSelectedGrade(e.target.value)}
           >
@@ -316,29 +326,62 @@ const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
             {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
           <select
-            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors min-w-[140px]"
+            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors min-w-[130px]"
             value={selectedSection}
             onChange={(e) => setSelectedSection(e.target.value)}
           >
             <option value="All">All Sections</option>
             {SECTIONS.map(s => <option key={s} value={s}>Section {s}</option>)}
           </select>
-          <select
-            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-600 cursor-pointer hover:bg-slate-100 transition-colors min-w-[140px]"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+          <button 
+            onClick={() => setSortDesc(!sortDesc)}
+            className="px-4 py-3 bg-slate-900 hover:bg-blue-600 text-white rounded-xl font-bold transition-colors flex items-center gap-2 min-w-[150px] justify-center shadow-md"
           >
-            <option value="All">All Status</option>
-            <option value="Pending">Pending Dues</option>
-            <option value="Cleared">Fully Cleared</option>
-          </select>
+            {sortDesc ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
+            Sort by Due
+          </button>
         </div>
       </div>
 
+      {/* Grid of Clickable Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStudents.map(student => (
-          <StudentCard key={student.id} student={student} onRecordPayment={onRecordPayment} />
-        ))}
+        {filteredStudents.map(student => {
+          const currentlyDue = calculateCurrentlyDue(student);
+          const hasCurrentDue = currentlyDue > 0;
+
+          return (
+            <div 
+              key={student.id} 
+              onClick={() => setSelectedStudent(student)}
+              className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-lg transition-all duration-300 relative group flex flex-col h-full cursor-pointer hover:border-blue-200"
+            >
+              <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${hasCurrentDue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+              
+              <div className="flex justify-between items-start mb-5 mt-1">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{student.name}</h3>
+                  <p className="text-sm text-slate-400 font-mono font-semibold mt-1">{student.roll}</p>
+                </div>
+                <div className="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  {student.grade} - {student.section}
+                </div>
+              </div>
+
+              <div className="space-y-3 mt-auto border-t border-slate-100 pt-5">
+                <div className={`flex justify-between items-center p-3 rounded-xl ${hasCurrentDue ? 'bg-rose-50' : 'bg-emerald-50'}`}>
+                  <span className="text-sm font-bold text-slate-700">Currently Due</span>
+                  <span className={`font-bold text-lg ${hasCurrentDue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    ₹{currentlyDue.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Yearly Pending</span>
+                  <span className="font-bold text-slate-500 text-sm">₹{Number(student.pendingFee).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {filteredStudents.length === 0 && (
@@ -349,64 +392,105 @@ const StudentsTab = ({ students, onRecordPayment, onAddStudent }) => {
         </div>
       )}
 
-      {/* Add Student Modal */}
-      {isAdding && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="font-bold text-slate-800 text-lg">Register New Student</h3>
-              <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
-                <input type="text" required value={newName} onChange={e => setNewName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rahul Kumar" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
-                  <input type="text" required value={newRoll} onChange={e => setNewRoll(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 10-A-21" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade & Section</label>
-                  <div className="flex gap-2">
-                    <select value={newGrade} onChange={e => setNewGrade(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                      {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    <select value={newSection} onChange={e => setNewSection(e.target.value)} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
-                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Fee (₹)</label>
-                  <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Fee (₹)</label>
-                  <input type="number" required min="0" value={newPendingFee} onChange={e => setNewPendingFee(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
-                </div>
-              </div>
-              <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-sm">
-                  Save Student
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Pop-up Modal for Full Details & Payment */}
+      {selectedStudent && (
+        <StudentDetailModal 
+          student={selectedStudent} 
+          onClose={() => setSelectedStudent(null)} 
+          onRecordPayment={onRecordPayment} 
+        />
       )}
+    </div>
+  );
+};
+
+const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
+  const [paymentAmount, setPaymentAmount] = useState('');
+  
+  const pendingFee = Number(student.pendingFee);
+  const totalFee = Number(student.totalFee);
+  const totalPaid = totalFee - pendingFee;
+  const currentlyDue = calculateCurrentlyDue(student);
+
+  const handlePaymentSubmit = (e) => {
+    e.preventDefault();
+    const amount = Number(paymentAmount);
+    if (amount > 0 && amount <= pendingFee) {
+      onRecordPayment(student.id, amount, pendingFee, student.name);
+      setPaymentAmount('');
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div>
+            <h3 className="font-bold text-slate-800 text-xl">{student.name}</h3>
+            <p className="text-sm text-slate-500 font-mono font-semibold mt-1">ID: {student.roll} • {student.grade}-{student.section}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-500 bg-white rounded-full border border-slate-200 shadow-sm transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6 space-y-6">
+          
+          {/* Financial Breakdown Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Yearly Fee</p>
+              <p className="text-lg font-bold text-slate-700">₹{totalFee.toLocaleString()}</p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid So Far</p>
+              <p className="text-lg font-bold text-slate-700">₹{totalPaid.toLocaleString()}</p>
+            </div>
+            <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 flex justify-between items-center">
+              <div>
+                <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total Yearly Pending</p>
+                <p className="text-2xl font-bold text-rose-600">₹{pendingFee.toLocaleString()}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due</p>
+                <p className="text-xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Activity/History Info */}
+          <div className="flex items-center text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+            {pendingFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
+            Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
+          </div>
+
+          {/* Payment Action */}
+          {pendingFee > 0 && (
+            <div className="border-t border-slate-100 pt-6">
+              <label className="block text-sm font-bold text-slate-700 mb-3">Record New Payment</label>
+              <form onSubmit={handlePaymentSubmit} className="flex gap-3">
+                <input 
+                  type="number" 
+                  max={pendingFee}
+                  min="1"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                  placeholder={`Enter amount (Max: ₹${pendingFee})`}
+                  required
+                />
+                <button type="submit" className="px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center whitespace-nowrap">
+                  <CreditCard size={18} className="mr-2" /> Pay
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -438,7 +522,6 @@ export default function App() {
     setCurrentUser(username);
     localStorage.setItem('schoolAppUser', username);
     
-    // Log login to Supabase
     await supabase.from('activities').insert([
       { user_name: username, action: 'Authenticated successfully' }
     ]);
@@ -455,22 +538,12 @@ export default function App() {
     const dateStr = new Date().toISOString().split('T')[0];
     const newPending = currentPending - amount;
 
-    // Update Student in Supabase
-    await supabase.from('students')
-      .update({ pendingFee: newPending, lastPaid: dateStr })
-      .eq('id', studentId);
-
-    // Log Activity in Supabase
-    await supabase.from('activities').insert([
-      { user_name: currentUser, action: `Processed payment of ₹${amount.toLocaleString()} for ${studentName}` }
-    ]);
-
-    // Refresh Data
+    await supabase.from('students').update({ pendingFee: newPending, lastPaid: dateStr }).eq('id', studentId);
+    await supabase.from('activities').insert([{ user_name: currentUser, action: `Processed payment of ₹${amount.toLocaleString()} for ${studentName}` }]);
     fetchData();
   };
 
   const handleAddStudent = async (newStudentData) => {
-    // 1. Ensure keys match the exact column names in your Supabase SQL table
     const formattedData = {
       name: newStudentData.name,
       roll: newStudentData.roll,
@@ -481,15 +554,14 @@ export default function App() {
       lastPaid: null
     };
 
-    // 2. Insert into students table
     await supabase.from('students').insert([formattedData]);
+    await supabase.from('activities').insert([{ user_name: currentUser, action: `Added new student record: ${newStudentData.name}` }]);
+    fetchData();
+  };
 
-    // 3. Log Activity
-    await supabase.from('activities').insert([
-      { user_name: currentUser, action: `Added new student record: ${newStudentData.name}` }
-    ]);
-
-    // 4. Refresh Data to show the new student card immediately
+  const handleRemoveStudent = async (studentId, studentName) => {
+    await supabase.from('students').delete().eq('id', studentId);
+    await supabase.from('activities').insert([{ user_name: currentUser, action: `Removed student record: ${studentName}` }]);
     fetchData();
   };
 
@@ -526,8 +598,17 @@ export default function App() {
               activeTab === 'students' ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Users size={20} />
-            <span>Student Database</span>
+            <FileText size={20} />
+            <span>Database</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('manage')}
+            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
+              activeTab === 'manage' ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <UserPlus size={20} />
+            <span>Manage Students</span>
           </button>
         </nav>
 
@@ -553,11 +634,9 @@ export default function App() {
         </header>
 
         <main className="max-w-7xl mx-auto pb-12">
-          {activeTab === 'dashboard' ? (
-            <Dashboard user={currentUser} activities={activities} students={students} />
-          ) : (
-            <StudentsTab students={students} onRecordPayment={handleRecordPayment} onAddStudent={handleAddStudent} />
-          )}
+          {activeTab === 'dashboard' && <Dashboard user={currentUser} activities={activities} students={students} />}
+          {activeTab === 'students' && <StudentsTab students={students} onRecordPayment={handleRecordPayment} />}
+          {activeTab === 'manage' && <ManageStudentsTab students={students} onAddStudent={handleAddStudent} onRemoveStudent={handleRemoveStudent} />}
         </main>
       </div>
     </div>
