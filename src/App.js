@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X, UserPlus, Trash2, ArrowDownWideNarrow, ArrowUpNarrowWide, FileText } from 'lucide-react';
+import { Search, LogOut, Activity, Users, AlertCircle, CheckCircle2, DollarSign, TrendingUp, CreditCard, X, UserPlus, Trash2, ArrowDownWideNarrow, ArrowUpNarrowWide, FileText, Edit2, Save } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
 // --- SUPABASE SETUP ---
@@ -222,13 +222,11 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
       </h2>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* ADD STUDENT SECTION */}
         <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-fit">
           <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center">
             <h3 className="font-bold text-slate-800 text-lg">Register New Student</h3>
           </div>
           <form onSubmit={handleAddSubmit} className="p-6 space-y-6">
-            
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Primary Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,7 +352,6 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
           </form>
         </div>
 
-        {/* REMOVE STUDENT SECTION */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden h-[600px] flex flex-col xl:col-span-1">
           <div className="px-6 py-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h3 className="font-bold text-slate-800 text-lg">Remove Student Record</h3>
@@ -387,7 +384,7 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
   );
 };
 
-const StudentsTab = ({ students, onRecordPayment }) => {
+const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('All');
   const [selectedSection, setSelectedSection] = useState('All');
@@ -517,14 +514,17 @@ const StudentsTab = ({ students, onRecordPayment }) => {
           student={selectedStudent} 
           onClose={() => setSelectedStudent(null)} 
           onRecordPayment={onRecordPayment} 
+          onEditStudent={onEditStudent}
         />
       )}
     </div>
   );
 };
 
-const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
+const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }) => {
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ ...student });
   
   const pendingFee = Number(student.pendingFee);
   const totalFee = Number(student.totalFee);
@@ -544,111 +544,223 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment }) => {
     }
   };
 
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    onEditStudent(student.id, editData, student.name);
+    setIsEditing(false);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         
-        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
-            <h3 className="font-bold text-slate-800 text-xl">{student.name}</h3>
-            <p className="text-sm text-slate-500 font-mono font-semibold mt-1">ID: {student.roll} • {student.grade}-{student.section}</p>
+            <h3 className="font-bold text-slate-800 text-xl">{isEditing ? `Editing ${student.name}` : student.name}</h3>
+            {!isEditing && <p className="text-sm text-slate-500 font-mono font-semibold mt-1">ID: {student.roll} • {student.grade}-{student.section}</p>}
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-500 bg-white rounded-full border border-slate-200 shadow-sm transition-colors">
-            <X size={20} />
-          </button>
+          <div className="flex gap-2">
+            {!isEditing && (
+              <button onClick={() => setIsEditing(true)} className="p-2 text-slate-600 hover:text-blue-600 bg-white rounded-full border border-slate-200 shadow-sm transition-colors" title="Edit Student">
+                <Edit2 size={20} />
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-rose-500 bg-white rounded-full border border-slate-200 shadow-sm transition-colors">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[80vh] space-y-6">
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
-            <div className="col-span-2">
-              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent's Name</span>
-              <span className="font-semibold text-slate-700">{student.parentName || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 1</span>
-              <span className="font-semibold text-slate-700">{student.contact1 || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 2</span>
-              <span className="font-semibold text-slate-700">{student.contact2 || 'N/A'}</span>
-            </div>
-            <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1">
-              <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Address & Distance</span>
-              <span className="font-semibold text-slate-700">{student.address || 'N/A'} ({student.distance || 'N/A'})</span>
-            </div>
-            <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1 grid grid-cols-3 gap-2">
-               <div>
-                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">UDISE Status</span>
-                 <span className="font-semibold text-slate-700">{student.udiseStatus || 'N/A'}</span>
-               </div>
-               <div>
-                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">APAR ID</span>
-                 <span className="font-semibold text-slate-700">{student.aparId || 'N/A'}</span>
-               </div>
-               <div>
-                 <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Remarks</span>
-                 <span className="font-semibold text-slate-700 truncate block">{student.remarks || 'None'}</span>
-               </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prev Balance</p>
-              <p className="text-lg font-bold text-slate-700">₹{previousBalance.toLocaleString()}</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Transport Fee</p>
-              <p className="text-lg font-bold text-slate-700">₹{transportFee.toLocaleString()}</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tuition</p>
-              <p className="text-lg font-bold text-slate-700">₹{totalFee.toLocaleString()}</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
-              <p className="text-lg font-bold text-slate-700">₹{totalPaid.toLocaleString()}</p>
-            </div>
-
-            <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 md:col-span-4 flex justify-between items-center">
-              <div>
-                <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total Yearly Pending</p>
-                <p className="text-2xl font-bold text-rose-600">₹{pendingFee.toLocaleString()}</p>
+        {/* Content Body */}
+        <div className="p-6 overflow-y-auto flex-1 bg-white">
+          {isEditing ? (
+            <form id="editForm" onSubmit={handleEditSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                  <input type="text" required value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Roll / ID</label>
+                  <input type="text" required value={editData.roll} onChange={e => setEditData({...editData, roll: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Grade</label>
+                  <select value={editData.grade} onChange={e => setEditData({...editData, grade: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                    {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Section</label>
+                  <select value={editData.section} onChange={e => setEditData({...editData, section: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none">
+                    {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due</p>
-                <p className="text-2xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-4">
+                <div className="md:col-span-1">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Parent's Name</label>
+                  <input type="text" value={editData.parentName || ''} onChange={e => setEditData({...editData, parentName: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Address</label>
+                  <input type="text" value={editData.address || ''} onChange={e => setEditData({...editData, address: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contact 1</label>
+                  <input type="text" value={editData.contact1 || ''} onChange={e => setEditData({...editData, contact1: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contact 2</label>
+                  <input type="text" value={editData.contact2 || ''} onChange={e => setEditData({...editData, contact2: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Distance (Bus)</label>
+                  <input type="text" value={editData.distance || ''} onChange={e => setEditData({...editData, distance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="flex items-center text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
-            {pendingFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
-            Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-100 pt-4">
+                 <div>
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">UDISE Status</label>
+                   <input type="text" value={editData.udiseStatus || ''} onChange={e => setEditData({...editData, udiseStatus: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">APAR ID</label>
+                   <input type="text" value={editData.aparId || ''} onChange={e => setEditData({...editData, aparId: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
+                   <input type="text" value={editData.remarks || ''} onChange={e => setEditData({...editData, remarks: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                 </div>
+              </div>
 
-          {pendingFee > 0 && (
-            <div className="border-t border-slate-100 pt-6">
-              <label className="block text-sm font-bold text-slate-700 mb-3">Record New Payment</label>
-              <form onSubmit={handlePaymentSubmit} className="flex gap-3">
-                <input 
-                  type="number" 
-                  max={pendingFee}
-                  min="1"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                  placeholder={`Enter amount (Max: ₹${pendingFee})`}
-                  required
-                />
-                <button type="submit" className="px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center whitespace-nowrap">
-                  <CreditCard size={18} className="mr-2" /> Pay
-                </button>
-              </form>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Tuition (₹)</label>
+                  <input type="number" required min="0" value={editData.totalFee} onChange={e => setEditData({...editData, totalFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Tuition (₹)</label>
+                  <input type="number" required min="0" value={editData.pendingFee} onChange={e => setEditData({...editData, pendingFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Transport Fee (₹)</label>
+                  <input type="number" required min="0" value={editData.transportFee || 0} onChange={e => setEditData({...editData, transportFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
+                  <input type="number" required min="0" value={editData.previousBalance || 0} onChange={e => setEditData({...editData, previousBalance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm">
+                <div className="col-span-2">
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Parent's Name</span>
+                  <span className="font-semibold text-slate-700">{student.parentName || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 1</span>
+                  <span className="font-semibold text-slate-700">{student.contact1 || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact 2</span>
+                  <span className="font-semibold text-slate-700">{student.contact2 || 'N/A'}</span>
+                </div>
+                <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1">
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Address & Distance</span>
+                  <span className="font-semibold text-slate-700">{student.address || 'N/A'} ({student.distance || 'N/A'})</span>
+                </div>
+                <div className="col-span-2 md:col-span-4 border-t border-slate-200 pt-3 mt-1 grid grid-cols-3 gap-2">
+                   <div>
+                     <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">UDISE Status</span>
+                     <span className="font-semibold text-slate-700">{student.udiseStatus || 'N/A'}</span>
+                   </div>
+                   <div>
+                     <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">APAR ID</span>
+                     <span className="font-semibold text-slate-700">{student.aparId || 'N/A'}</span>
+                   </div>
+                   <div>
+                     <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Remarks</span>
+                     <span className="font-semibold text-slate-700 truncate block">{student.remarks || 'None'}</span>
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Prev Balance</p>
+                  <p className="text-lg font-bold text-slate-700">₹{previousBalance.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Transport Fee</p>
+                  <p className="text-lg font-bold text-slate-700">₹{transportFee.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tuition</p>
+                  <p className="text-lg font-bold text-slate-700">₹{totalFee.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
+                  <p className="text-lg font-bold text-slate-700">₹{totalPaid.toLocaleString()}</p>
+                </div>
+
+                <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 md:col-span-4 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total Yearly Pending</p>
+                    <p className="text-2xl font-bold text-rose-600">₹{pendingFee.toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due</p>
+                    <p className="text-2xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                {pendingFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
+                Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
+              </div>
+
+              {pendingFee > 0 && (
+                <div className="border-t border-slate-100 pt-6">
+                  <label className="block text-sm font-bold text-slate-700 mb-3">Record New Payment</label>
+                  <form onSubmit={handlePaymentSubmit} className="flex gap-3">
+                    <input 
+                      type="number" 
+                      max={pendingFee}
+                      min="1"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
+                      placeholder={`Enter amount (Max: ₹${pendingFee})`}
+                      required
+                    />
+                    <button type="submit" className="px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center whitespace-nowrap">
+                      <CreditCard size={18} className="mr-2" /> Pay
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
         </div>
+        
+        {/* Footer for Edit Mode */}
+        {isEditing && (
+          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+            <button onClick={() => { setIsEditing(false); setEditData({...student}); }} className="px-5 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button form="editForm" type="submit" className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-sm flex items-center">
+              <Save size={18} className="mr-2" /> Save Changes
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -705,6 +817,12 @@ export default function App() {
   const handleAddStudent = async (newStudentData) => {
     await supabase.from('students').insert([newStudentData]);
     await supabase.from('activities').insert([{ user_name: currentUser, action: `Added new student record: ${newStudentData.name}` }]);
+    fetchData();
+  };
+
+  const handleEditStudent = async (studentId, updatedData, studentName) => {
+    await supabase.from('students').update(updatedData).eq('id', studentId);
+    await supabase.from('activities').insert([{ user_name: currentUser, action: `Edited student record: ${studentName}` }]);
     fetchData();
   };
 
@@ -787,7 +905,7 @@ export default function App() {
         <main className="max-w-7xl mx-auto pb-12">
           {activeTab === 'dashboard' && <Dashboard user={currentUser} activities={activities} students={students} />}
           {activeTab === 'manage' && <ManageStudentsTab students={students} onAddStudent={handleAddStudent} onRemoveStudent={handleRemoveStudent} />}
-          {activeTab === 'students' && <StudentsTab students={students} onRecordPayment={handleRecordPayment} />}
+          {activeTab === 'students' && <StudentsTab students={students} onRecordPayment={handleRecordPayment} onEditStudent={handleEditStudent} />}
         </main>
       </div>
     </div>
