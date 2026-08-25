@@ -164,23 +164,31 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
   const [newGrade, setNewGrade] = useState(GRADES[0]);
   const [newSection, setNewSection] = useState(SECTIONS[0]);
   const [newTotalFee, setNewTotalFee] = useState('');
-  const [newPendingFee, setNewPendingFee] = useState('');
+  const [newFeesSubmitted, setNewFeesSubmitted] = useState('');
+  const [newLastPaidDate, setNewLastPaidDate] = useState('');
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
+    
+    // Automatically calculate the yearly pending fee for the database
+    const calculatedPendingFee = Number(newTotalFee) - Number(newFeesSubmitted);
+
     onAddStudent({
       name: newName,
       roll: newRoll,
       grade: newGrade,
       section: newSection,
       totalFee: Number(newTotalFee),
-      pendingFee: Number(newPendingFee),
-      lastPaid: null
+      pendingFee: calculatedPendingFee,
+      lastPaid: newLastPaidDate || null
     });
+    
+    // Reset form
     setNewName('');
     setNewRoll('');
     setNewTotalFee('');
-    setNewPendingFee('');
+    setNewFeesSubmitted('');
+    setNewLastPaidDate('');
   };
 
   return (
@@ -220,16 +228,21 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Yearly Fee (₹)</label>
                 <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Fee (₹)</label>
-                <input type="number" required min="0" value={newPendingFee} onChange={e => setNewPendingFee(e.target.value)}
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fees Submitted (₹)</label>
+                <input type="number" required min="0" value={newFeesSubmitted} onChange={e => setNewFeesSubmitted(e.target.value)}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Date of Submission</label>
+                <input type="date" value={newLastPaidDate} onChange={e => setNewLastPaidDate(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
             </div>
             <div className="pt-4 mt-2 border-t border-slate-100 flex justify-end">
@@ -285,7 +298,7 @@ const StudentsTab = ({ students, onRecordPayment }) => {
     const matchesSearch = 
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       student.roll.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.pendingFee.toString().includes(searchTerm); // Search by pending fee number
+      student.pendingFee.toString().includes(searchTerm); 
       
     const matchesGrade = selectedGrade === 'All' || student.grade === selectedGrade;
     const matchesSection = selectedSection === 'All' || student.section === selectedSection;
@@ -331,7 +344,7 @@ const StudentsTab = ({ students, onRecordPayment }) => {
             onChange={(e) => setSelectedSection(e.target.value)}
           >
             <option value="All">All Sections</option>
-            {SECTIONS.map(s => <option key={s} value={s}>Section {s}</option>)}
+            {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button 
             onClick={() => setSortDesc(!sortDesc)}
@@ -551,7 +564,7 @@ export default function App() {
       section: newStudentData.section,
       pendingFee: newStudentData.pendingFee,
       totalFee: newStudentData.totalFee,
-      lastPaid: null
+      lastPaid: newStudentData.lastPaid
     };
 
     await supabase.from('students').insert([formattedData]);
@@ -592,15 +605,7 @@ export default function App() {
             <Activity size={20} />
             <span>Overview Dashboard</span>
           </button>
-          <button
-            onClick={() => setActiveTab('students')}
-            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
-              activeTab === 'students' ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <FileText size={20} />
-            <span>Database</span>
-          </button>
+          
           <button
             onClick={() => setActiveTab('manage')}
             className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
@@ -609,6 +614,16 @@ export default function App() {
           >
             <UserPlus size={20} />
             <span>Manage Students</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('students')}
+            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-semibold ${
+              activeTab === 'students' ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <FileText size={20} />
+            <span>Database</span>
           </button>
         </nav>
 
@@ -635,8 +650,8 @@ export default function App() {
 
         <main className="max-w-7xl mx-auto pb-12">
           {activeTab === 'dashboard' && <Dashboard user={currentUser} activities={activities} students={students} />}
-          {activeTab === 'students' && <StudentsTab students={students} onRecordPayment={handleRecordPayment} />}
           {activeTab === 'manage' && <ManageStudentsTab students={students} onAddStudent={handleAddStudent} onRemoveStudent={handleRemoveStudent} />}
+          {activeTab === 'students' && <StudentsTab students={students} onRecordPayment={handleRecordPayment} />}
         </main>
       </div>
     </div>
