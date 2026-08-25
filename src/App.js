@@ -356,54 +356,71 @@ const StudentsTab = ({ students, onRecordPayment }) => {
         </div>
       </div>
 
-      {/* Grid of Clickable Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStudents.map(student => {
-          const currentlyDue = calculateCurrentlyDue(student);
-          const hasCurrentDue = currentlyDue > 0;
+      {/* List Layout Database */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        {/* Table Header (Hidden on small screens) */}
+        <div className="hidden md:grid grid-cols-4 gap-4 p-5 border-b border-slate-100 bg-slate-50/80 text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <div className="pl-6">Student Name</div>
+          <div>ID & Class</div>
+          <div>Total Yearly Pending</div>
+          <div>Currently Due</div>
+        </div>
+        
+        {/* Table Body */}
+        <div className="divide-y divide-slate-100">
+          {filteredStudents.map(student => {
+            const currentlyDue = calculateCurrentlyDue(student);
+            const hasCurrentDue = currentlyDue > 0;
 
-          return (
-            <div 
-              key={student.id} 
-              onClick={() => setSelectedStudent(student)}
-              className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 hover:shadow-lg transition-all duration-300 relative group flex flex-col h-full cursor-pointer hover:border-blue-200"
-            >
-              <div className={`absolute top-0 left-0 w-full h-1.5 transition-colors duration-300 ${hasCurrentDue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
-              
-              <div className="flex justify-between items-start mb-5 mt-1">
+            return (
+              <div 
+                key={student.id} 
+                onClick={() => setSelectedStudent(student)}
+                className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 items-center hover:bg-blue-50/40 cursor-pointer transition-colors group relative"
+              >
+                {/* Visual Status Indicator Line */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 transition-colors ${hasCurrentDue ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+                
+                {/* Col 1: Name */}
+                <div className="pl-4 md:pl-6">
+                  <h3 className="font-bold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{student.name}</h3>
+                </div>
+                
+                {/* Col 2: ID & Class */}
                 <div>
-                  <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{student.name}</h3>
-                  <p className="text-sm text-slate-400 font-mono font-semibold mt-1">{student.roll}</p>
+                  <p className="text-sm text-slate-500 font-mono font-bold">{student.roll}</p>
+                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 mt-1 inline-block">
+                    {student.grade} - {student.section}
+                  </span>
                 </div>
-                <div className="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 uppercase tracking-wider">
-                  {student.grade} - {student.section}
+                
+                {/* Col 3: Yearly Pending */}
+                <div>
+                  <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Total Pending:</span>
+                  <span className="font-bold text-slate-600 text-base">₹{Number(student.pendingFee).toLocaleString()}</span>
                 </div>
-              </div>
-
-              <div className="space-y-3 mt-auto border-t border-slate-100 pt-5">
-                <div className={`flex justify-between items-center p-3 rounded-xl ${hasCurrentDue ? 'bg-rose-50' : 'bg-emerald-50'}`}>
-                  <span className="text-sm font-bold text-slate-700">Currently Due</span>
-                  <span className={`font-bold text-lg ${hasCurrentDue ? 'text-rose-600' : 'text-emerald-600'}`}>
+                
+                {/* Col 4: Currently Due */}
+                <div>
+                  <span className="md:hidden text-xs font-bold text-slate-400 mr-2 uppercase tracking-wide">Currently Due:</span>
+                  <span className={`font-bold inline-block px-3 py-1.5 rounded-lg border ${hasCurrentDue ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
                     ₹{currentlyDue.toLocaleString()}
                   </span>
                 </div>
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Yearly Pending</span>
-                  <span className="font-bold text-slate-500 text-sm">₹{Number(student.pendingFee).toLocaleString()}</span>
-                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {filteredStudents.length === 0 && (
-        <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 shadow-sm mt-4 flex flex-col items-center justify-center">
-          <Users size={48} className="text-slate-300 mb-4" />
-          <h3 className="text-lg font-bold text-slate-600">No matching records found</h3>
-          <p className="text-sm text-slate-400 mt-1">Adjust your filters or search term to try again.</p>
+            );
+          })}
         </div>
-      )}
+
+        {/* Empty State */}
+        {filteredStudents.length === 0 && (
+          <div className="text-center py-16 flex flex-col items-center justify-center">
+            <Users size={48} className="text-slate-300 mb-4" />
+            <h3 className="text-lg font-bold text-slate-600">No matching records found</h3>
+            <p className="text-sm text-slate-400 mt-1">Adjust your filters or search term to try again.</p>
+          </div>
+        )}
+      </div>
 
       {/* Pop-up Modal for Full Details & Payment */}
       {selectedStudent && (
