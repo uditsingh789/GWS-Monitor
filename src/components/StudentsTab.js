@@ -150,7 +150,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                  </div>
               </div>
 
-              {/* Clean, simple financial inputs. The complex stuff is auto-calculated under the hood! */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Tuition (₹)</label>
@@ -321,6 +320,9 @@ const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
     return sortDesc ? dueB - dueA : dueA - dueB;
   });
 
+  // Calculate the total currently due dynamically based on the filtered results
+  const totalCurrentDues = filteredStudents.reduce((sum, student) => sum + calculateCurrentlyDue(student), 0);
+
   return (
     <div className="p-6 md:p-8 animate-in fade-in duration-500 relative">
       <h2 className="text-3xl font-bold text-slate-800 mb-8 flex items-center">
@@ -328,7 +330,7 @@ const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
         Database & Fee Collection
       </h2>
 
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col lg:flex-row gap-4 items-center">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-4 flex flex-col lg:flex-row gap-4 items-center">
         <div className="flex-1 relative w-full">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
           <input
@@ -363,6 +365,18 @@ const StudentsTab = ({ students, onRecordPayment, onEditStudent }) => {
             {sortDesc ? <ArrowDownWideNarrow size={18} /> : <ArrowUpNarrowWide size={18} />}
             Sort by Due
           </button>
+        </div>
+      </div>
+
+      {/* NEW SUMMATION BAR */}
+      <div className="bg-slate-50 border border-slate-200 px-5 py-3 rounded-xl shadow-sm mb-6 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Students:</span>
+           <span className="text-sm font-bold text-slate-800">{filteredStudents.length}</span>
+        </div>
+        <div className="flex items-center gap-2">
+           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Current Dues:</span>
+           <span className="text-sm font-bold text-rose-600">₹{totalCurrentDues.toLocaleString()}</span>
         </div>
       </div>
 
