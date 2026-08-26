@@ -7,13 +7,23 @@ export const getAcademicMonth = () => {
 };
 
 export const calculateCurrentlyDue = (student) => {
-  const totalPaid = Number(student.totalFee) - Number(student.pendingFee);
-  const monthlyFee = Number(student.totalFee) / 12;
-  const expectedPayment = monthlyFee * getAcademicMonth();
-  
-  const baseTuitionDue = Math.max(0, expectedPayment - totalPaid);
-  const previousBalance = Number(student.previousBalance || 0);
+  const prevBal = Number(student.previousBalance || 0);
+  const monthlyFee = Number(student.monthlyFee || 0);
   const transportFee = Number(student.transportFee || 0);
+  const pendingFee = Number(student.pendingFee || 0);
+
+  // Total Expected General Tuition for the entire year
+  const totalYearlyGeneral = prevBal + (monthlyFee * 12) + transportFee;
+  const totalPaidGeneral = totalYearlyGeneral - pendingFee;
+
+  const currentMonth = getAcademicMonth();
   
-  return baseTuitionDue + previousBalance + transportFee;
+  // Transport is divided across 11 months
+  const transportMonthsToCharge = Math.min(currentMonth, 11);
+  const transportDueToDate = (transportFee / 11) * transportMonthsToCharge;
+
+  // Expected payment to this point in the year
+  const expectedToDate = prevBal + (monthlyFee * currentMonth) + transportDueToDate;
+  
+  return Math.max(0, expectedToDate - totalPaidGeneral);
 };

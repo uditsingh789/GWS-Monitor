@@ -17,15 +17,25 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
   const [aparId, setAparId] = useState('');
   const [remarks, setRemarks] = useState('');
 
-  const [newTotalFee, setNewTotalFee] = useState('');
-  const [newFeesSubmitted, setNewFeesSubmitted] = useState('');
+  const [monthlyFee, setMonthlyFee] = useState('');
+  const [examinationFee, setExaminationFee] = useState('');
   const [previousBalance, setPreviousBalance] = useState('');
   const [transportFee, setTransportFee] = useState('');
+  const [newFeesSubmitted, setNewFeesSubmitted] = useState('');
   const [newLastPaidDate, setNewLastPaidDate] = useState('');
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    const calculatedPendingFee = Number(newTotalFee) - Number(newFeesSubmitted);
+    
+    const mFee = Number(monthlyFee || 0);
+    const tFee = Number(transportFee || 0);
+    const pBal = Number(previousBalance || 0);
+    const examFee = Number(examinationFee || 0);
+    const submitted = Number(newFeesSubmitted || 0);
+
+    // Calculate total yearly general obligation (excludes separate exam fee)
+    const totalYearlyGeneral = pBal + (mFee * 12) + tFee;
+    const calculatedPendingFee = totalYearlyGeneral - submitted;
 
     onAddStudent({
       name: newName,
@@ -40,17 +50,21 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
       udiseStatus: udiseStatus,
       aparId: aparId,
       remarks: remarks,
-      previousBalance: Number(previousBalance || 0),
-      transportFee: Number(transportFee || 0),
-      totalFee: Number(newTotalFee),
+      monthlyFee: mFee,
+      examinationFee: examFee,
+      pendingExamFee: examFee, // Initializes fully pending since it's paid separately
+      previousBalance: pBal,
+      transportFee: tFee,
+      totalFee: totalYearlyGeneral,
       pendingFee: calculatedPendingFee,
       lastPaid: newLastPaidDate || null
     });
     
+    // Reset form
     setNewName(''); setNewRoll(''); setParentName(''); setAddress('');
     setDistance(''); setContact1(''); setContact2(''); setUdiseStatus('');
-    setAparId(''); setRemarks(''); setNewTotalFee(''); setNewFeesSubmitted('');
-    setPreviousBalance(''); setTransportFee(''); setNewLastPaidDate('');
+    setAparId(''); setRemarks(''); setMonthlyFee(''); setExaminationFee(''); 
+    setNewFeesSubmitted(''); setPreviousBalance(''); setTransportFee(''); setNewLastPaidDate('');
   };
 
   return (
@@ -151,15 +165,15 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
 
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Financials</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Yearly Fee (₹)</label>
-                  <input type="number" required min="0" value={newTotalFee} onChange={e => setNewTotalFee(e.target.value)}
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
+                  <input type="number" min="0" value={previousBalance} onChange={e => setPreviousBalance(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Previous Year Balance (₹)</label>
-                  <input type="number" min="0" value={previousBalance} onChange={e => setPreviousBalance(e.target.value)}
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Fee (₹)</label>
+                  <input type="number" required min="0" value={monthlyFee} onChange={e => setMonthlyFee(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
                 </div>
                 <div>
@@ -167,11 +181,16 @@ const ManageStudentsTab = ({ students, onAddStudent, onRemoveStudent }) => {
                   <input type="number" min="0" value={transportFee} onChange={e => setTransportFee(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Examination Fee (₹)</label>
+                  <input type="number" min="0" value={examinationFee} onChange={e => setExaminationFee(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Fees Submitted (₹)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">General Fees Submitted (₹)</label>
                   <input type="number" required min="0" value={newFeesSubmitted} onChange={e => setNewFeesSubmitted(e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0" />
                 </div>

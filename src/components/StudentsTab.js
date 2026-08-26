@@ -4,22 +4,28 @@ import { GRADES, SECTIONS, calculateCurrentlyDue } from '../utils';
 
 const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }) => {
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentType, setPaymentType] = useState('general'); // 'general' or 'exam'
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...student });
   
-  const pendingFee = Number(student.pendingFee);
-  const totalFee = Number(student.totalFee);
+  const pendingFee = Number(student.pendingFee || 0);
+  const pendingExamFee = Number(student.pendingExamFee || 0);
+  const totalFee = Number(student.totalFee || 0);
   const totalPaid = totalFee - pendingFee;
   
   const previousBalance = Number(student.previousBalance || 0);
   const transportFee = Number(student.transportFee || 0);
+  const monthlyFee = Number(student.monthlyFee || 0);
+  const examinationFee = Number(student.examinationFee || 0);
+  
   const currentlyDue = calculateCurrentlyDue(student);
+  const activePending = paymentType === 'general' ? pendingFee : pendingExamFee;
 
   const handlePaymentSubmit = (e) => {
     e.preventDefault();
     const amount = Number(paymentAmount);
-    if (amount > 0 && amount <= pendingFee) {
-      onRecordPayment(student.id, amount, pendingFee, student.name);
+    if (amount > 0 && amount <= activePending) {
+      onRecordPayment(student.id, amount, activePending, student.name, paymentType);
       setPaymentAmount('');
       onClose();
     }
@@ -118,20 +124,20 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Tuition (₹)</label>
-                  <input type="number" required min="0" value={editData.totalFee} onChange={e => setEditData({...editData, totalFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
+                  <input type="number" required min="0" value={editData.previousBalance || 0} onChange={e => setEditData({...editData, previousBalance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Tuition (₹)</label>
-                  <input type="number" required min="0" value={editData.pendingFee} onChange={e => setEditData({...editData, pendingFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Fee (₹)</label>
+                  <input type="number" required min="0" value={editData.monthlyFee || 0} onChange={e => setEditData({...editData, monthlyFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Transport Fee (₹)</label>
                   <input type="number" required min="0" value={editData.transportFee || 0} onChange={e => setEditData({...editData, transportFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
-                  <input type="number" required min="0" value={editData.previousBalance || 0} onChange={e => setEditData({...editData, previousBalance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Examination Fee (₹)</label>
+                  <input type="number" required min="0" value={editData.examinationFee || 0} onChange={e => setEditData({...editData, examinationFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               </div>
             </form>
@@ -176,50 +182,63 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                   <p className="text-lg font-bold text-slate-700">₹{previousBalance.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Transport Fee</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Tuition</p>
+                  <p className="text-lg font-bold text-slate-700">₹{monthlyFee.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Yearly Transport</p>
                   <p className="text-lg font-bold text-slate-700">₹{transportFee.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Tuition</p>
-                  <p className="text-lg font-bold text-slate-700">₹{totalFee.toLocaleString()}</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Paid</p>
-                  <p className="text-lg font-bold text-slate-700">₹{totalPaid.toLocaleString()}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Exam Fee</p>
+                  <p className="text-lg font-bold text-slate-700">₹{examinationFee.toLocaleString()}</p>
                 </div>
 
                 <div className="bg-rose-50 p-4 rounded-xl border border-rose-100 col-span-2 md:col-span-4 flex justify-between items-center">
                   <div>
-                    <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total Yearly Pending</p>
+                    <p className="text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Total General Pending (Exc. Exam)</p>
                     <p className="text-2xl font-bold text-rose-600">₹{pendingFee.toLocaleString()}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Currently Due (To Date)</p>
                     <p className="text-2xl font-bold text-slate-800">₹{currentlyDue.toLocaleString()}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                {pendingFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
-                Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
+              <div className="flex items-center justify-between text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <div className="flex items-center">
+                  {pendingFee > 0 || pendingExamFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
+                  Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
+                </div>
+                <div className="text-xs text-rose-600 font-bold">
+                  Pending Exam Fee: ₹{pendingExamFee.toLocaleString()}
+                </div>
               </div>
 
-              {pendingFee > 0 && (
+              {(pendingFee > 0 || pendingExamFee > 0) && (
                 <div className="border-t border-slate-100 pt-6">
                   <label className="block text-sm font-bold text-slate-700 mb-3">Record New Payment</label>
-                  <form onSubmit={handlePaymentSubmit} className="flex gap-3">
+                  <form onSubmit={handlePaymentSubmit} className="flex flex-col md:flex-row gap-3">
+                    <select 
+                      value={paymentType} 
+                      onChange={(e) => setPaymentType(e.target.value)}
+                      className="p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium md:w-1/3"
+                    >
+                      {pendingFee > 0 && <option value="general">Tuition / Transport / Prev Dues</option>}
+                      {pendingExamFee > 0 && <option value="exam">Examination Fee</option>}
+                    </select>
                     <input 
                       type="number" 
-                      max={pendingFee}
+                      max={activePending}
                       min="1"
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium"
-                      placeholder={`Enter amount (Max: ₹${pendingFee})`}
+                      placeholder={`Enter amount (Max: ₹${activePending})`}
                       required
                     />
-                    <button type="submit" className="px-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center whitespace-nowrap">
+                    <button type="submit" className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center whitespace-nowrap">
                       <CreditCard size={18} className="mr-2" /> Pay
                     </button>
                   </form>
