@@ -3,11 +3,6 @@ import { Search, Users, AlertCircle, CheckCircle2, CreditCard, X, ArrowDownWideN
 import { GRADES, SECTIONS, calculateCurrentlyDue } from '../utils';
 
 const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }) => {
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentType, setPaymentType] = useState('general'); // 'general' or 'exam'
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState({ ...student });
-  
   const pendingFee = Number(student.pendingFee || 0);
   const pendingExamFee = Number(student.pendingExamFee || 0);
   const totalFee = Number(student.totalFee || 0);
@@ -19,6 +14,13 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
   const examinationFee = Number(student.examinationFee || 0);
   
   const currentlyDue = calculateCurrentlyDue(student);
+
+  const [paymentAmount, setPaymentAmount] = useState('');
+  // Automatically defaults to exam if general is fully paid off
+  const [paymentType, setPaymentType] = useState(pendingFee > 0 ? 'general' : 'exam'); 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ ...student });
+  
   const activePending = paymentType === 'general' ? pendingFee : pendingExamFee;
 
   const handlePaymentSubmit = (e) => {
@@ -122,13 +124,10 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                  </div>
               </div>
 
+              {/* Updated Financial Edit Fields */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
-                  <input type="number" required min="0" value={editData.previousBalance || 0} onChange={e => setEditData({...editData, previousBalance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Fee (₹)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Tuition (₹)</label>
                   <input type="number" required min="0" value={editData.monthlyFee || 0} onChange={e => setEditData({...editData, monthlyFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
@@ -136,8 +135,27 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                   <input type="number" required min="0" value={editData.transportFee || 0} onChange={e => setEditData({...editData, transportFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Examination Fee (₹)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Prev Balance (₹)</label>
+                  <input type="number" required min="0" value={editData.previousBalance || 0} onChange={e => setEditData({...editData, previousBalance: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Base Exam Fee (₹)</label>
                   <input type="number" required min="0" value={editData.examinationFee || 0} onChange={e => setEditData({...editData, examinationFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Gen Tuition (₹)</label>
+                  <input type="number" required min="0" value={editData.totalFee} onChange={e => setEditData({...editData, totalFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Gen Tuition (₹)</label>
+                  <input type="number" required min="0" value={editData.pendingFee} onChange={e => setEditData({...editData, pendingFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Pending Exam Fee (₹)</label>
+                  <input type="number" required min="0" value={editData.pendingExamFee || 0} onChange={e => setEditData({...editData, pendingExamFee: e.target.value})} className="w-full p-2.5 bg-rose-50 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" />
                 </div>
               </div>
             </form>
@@ -206,12 +224,12 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-sm font-semibold text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100 gap-2">
                 <div className="flex items-center">
                   {pendingFee > 0 || pendingExamFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
                   Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
                 </div>
-                <div className="text-xs text-rose-600 font-bold">
+                <div className="text-xs text-rose-600 font-bold bg-rose-100 px-3 py-1 rounded-md border border-rose-200">
                   Pending Exam Fee: ₹{pendingExamFee.toLocaleString()}
                 </div>
               </div>
@@ -222,7 +240,10 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                   <form onSubmit={handlePaymentSubmit} className="flex flex-col md:flex-row gap-3">
                     <select 
                       value={paymentType} 
-                      onChange={(e) => setPaymentType(e.target.value)}
+                      onChange={(e) => {
+                        setPaymentType(e.target.value);
+                        setPaymentAmount('');
+                      }}
                       className="p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-medium md:w-1/3"
                     >
                       {pendingFee > 0 && <option value="general">Tuition / Transport / Prev Dues</option>}
