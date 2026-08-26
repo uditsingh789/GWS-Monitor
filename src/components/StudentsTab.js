@@ -16,7 +16,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
   const currentlyDue = calculateCurrentlyDue(student);
 
   const [paymentAmount, setPaymentAmount] = useState('');
-  // Automatically defaults to exam if general is fully paid off
   const [paymentType, setPaymentType] = useState(pendingFee > 0 ? 'general' : 'exam'); 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ ...student });
@@ -35,7 +34,34 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    onEditStudent(student.id, editData, student.name);
+
+    // 1. Grab the newly edited base values
+    const mFee = Number(editData.monthlyFee || 0);
+    const tFee = Number(editData.transportFee || 0);
+    const pBal = Number(editData.previousBalance || 0);
+    const eFee = Number(editData.examinationFee || 0);
+
+    // 2. Calculate how much the student has ALREADY paid prior to this edit
+    const oldTotalPaid = Number(student.totalFee || 0) - Number(student.pendingFee || 0);
+    const oldExamPaid = Number(student.examinationFee || 0) - Number(student.pendingExamFee || 0);
+
+    // 3. Automatically calculate the NEW totals and pending amounts mathematically
+    const newTotalFee = pBal + (mFee * 12) + tFee;
+    const newPendingFee = newTotalFee - oldTotalPaid;
+    const newPendingExamFee = eFee - oldExamPaid;
+
+    const finalEditData = {
+      ...editData,
+      monthlyFee: mFee,
+      transportFee: tFee,
+      previousBalance: pBal,
+      examinationFee: eFee,
+      totalFee: newTotalFee,
+      pendingFee: newPendingFee,
+      pendingExamFee: newPendingExamFee
+    };
+
+    onEditStudent(student.id, finalEditData, student.name);
     setIsEditing(false);
   };
 
@@ -124,7 +150,7 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                  </div>
               </div>
 
-              {/* Updated Financial Edit Fields */}
+              {/* Clean, simple financial inputs. The complex stuff is auto-calculated under the hood! */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-slate-100 pt-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Monthly Tuition (₹)</label>
@@ -141,21 +167,6 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Base Exam Fee (₹)</label>
                   <input type="number" required min="0" value={editData.examinationFee || 0} onChange={e => setEditData({...editData, examinationFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Gen Tuition (₹)</label>
-                  <input type="number" required min="0" value={editData.totalFee} onChange={e => setEditData({...editData, totalFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Pending Gen Tuition (₹)</label>
-                  <input type="number" required min="0" value={editData.pendingFee} onChange={e => setEditData({...editData, pendingFee: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-rose-500 uppercase tracking-wider mb-1">Pending Exam Fee (₹)</label>
-                  <input type="number" required min="0" value={editData.pendingExamFee || 0} onChange={e => setEditData({...editData, pendingExamFee: e.target.value})} className="w-full p-2.5 bg-rose-50 border border-rose-200 rounded-lg focus:ring-2 focus:ring-rose-500 outline-none" />
                 </div>
               </div>
             </form>
@@ -208,7 +219,7 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                   <p className="text-lg font-bold text-slate-700">₹{transportFee.toLocaleString()}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Exam Fee</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Base Exam Fee</p>
                   <p className="text-lg font-bold text-slate-700">₹{examinationFee.toLocaleString()}</p>
                 </div>
 
@@ -229,9 +240,12 @@ const StudentDetailModal = ({ student, onClose, onRecordPayment, onEditStudent }
                   {pendingFee > 0 || pendingExamFee > 0 ? <AlertCircle size={16} className="mr-2 text-amber-500" /> : <CheckCircle2 size={16} className="mr-2 text-emerald-500" />}
                   Last payment received on: <span className="ml-1 text-slate-800 font-bold">{student.lastPaid || 'No records found'}</span>
                 </div>
-                <div className="text-xs text-rose-600 font-bold bg-rose-100 px-3 py-1 rounded-md border border-rose-200">
-                  Pending Exam Fee: ₹{pendingExamFee.toLocaleString()}
-                </div>
+                
+                {examinationFee > 0 && (
+                  <div className={`text-xs font-bold px-3 py-1 rounded-md border ${pendingExamFee > 0 ? 'text-rose-600 bg-rose-100 border-rose-200' : 'text-emerald-600 bg-emerald-100 border-emerald-200'}`}>
+                    {pendingExamFee > 0 ? `Pending Exam Fee: ₹${pendingExamFee.toLocaleString()}` : 'Exam Fee: Cleared'}
+                  </div>
+                )}
               </div>
 
               {(pendingFee > 0 || pendingExamFee > 0) && (
